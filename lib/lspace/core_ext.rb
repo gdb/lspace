@@ -63,6 +63,29 @@ class Module
       protected method if protected_method_defined?(method_without_lspace)
     end
   end
+
+  def in_fresh_lspace(*methods)
+    methods.each do |method|
+      method_without_lspace = "#{method}_without_lspace"
+
+      # Idempotence: do nothing if the _without_lspace method already exists.
+      # method_defined? matches public and protected methods; private methods need a separate check.
+      next if method_defined?(method_without_lspace) || private_method_defined?(method_without_lspace)
+
+      alias_method method_without_lspace, method
+
+      define_method(method) do |*args, &block|
+        args.map!{ |a| (Proc === a || Method === a) ? a.in_lspace : a }
+        lspace = LSpace.new
+        lspace.parent = nil
+        block = lspace.wrap(block) if block
+        __send__(method_without_lspace, *args, &block)
+      end
+
+      private method if private_method_defined?(method_without_lspace)
+      protected method if protected_method_defined?(method_without_lspace)
+    end
+  end
 end
 
 class Proc
@@ -98,4 +121,3 @@ class Method
     LSpace.preserve(&self)
   end
 end
-

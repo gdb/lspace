@@ -1,5 +1,5 @@
 class << Thread
-  in_lspace :new, :start, :fork
+  in_fresh_lspace :new, :start, :fork
 end
 
 module Kernel
